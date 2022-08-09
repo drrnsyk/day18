@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import vttp2022.ssf.day18shoppingcart.models.Cart;
+import vttp2022.ssf.day18shoppingcart.models.Item;
 import vttp2022.ssf.day18shoppingcart.services.CartService;
 
 @Controller
@@ -35,28 +37,41 @@ public class CartController {
         String userName = form.getFirst("userName");
         model.addAttribute("userName", userName);
 
+
         // instantiate a linkedlist to store the items
-        List<String> cartList = new LinkedList<>();
+        List<Item> itemList = new LinkedList<>();
+        // List<Cart> cartList = new LinkedList<>();
 
-        // convert from string to linkedlist so that item can be added
-        String cartStr = form.getFirst("cartStr");
-        cartList = cartSvc.deserializer(cartStr);
+        
+        // get item name from form
+        String itemName = form.getFirst("item");
+        // get item quantity from form
+        Integer quantity = Integer.parseInt(form.getFirst("quantity"));
+        // generate item and add it to a list of item
+        itemList = cartSvc.addItemToList(cartSvc.generateItem(itemName, quantity));
+        // generate the cart containing the list of item
+        Cart cart = cartSvc.generateCart(userName.toLowerCase(), itemList);
+        // save the cart to redis in a json string format in redis list
+        cartSvc.saveRepo(cart);
 
-        // get item from form and populate in the linkedlist
-        String item = form.getFirst("item");
-        cartList.add(item);
-        // cartList = cartSvc.addToCart(item);
 
-        // convert the linkedlist to string to be added back to the form as hidden field
-        cartStr = cartSvc.serializer(cartList);
-
-        model.addAttribute("cartList", cartList);
-        model.addAttribute("cartStr", cartStr);
+        // get json string from the redis by passing in key userName
+        // convert json string to json object
+        // convert json object to model cart
+        // get list of cart to populate in view
+        cart = cartSvc.getRepo(userName.toLowerCase());
+        itemList = cart.getContents();
+        // System.out.println(cart.getContents().get(0).getName());
+        // cartList.add(cart);
+        
+        model.addAttribute("itemList", itemList);
+        // model.addAttribute("cartStr", cartStr);
 
         // for (int i = 0; i < cartList.size(); i++) {
-        //     System.out.println(cartList.get(i));
+        //     System.out.println(cartList.get(i).getName());
+        //     System.out.println(cartList.get(i).getQuantity());
         // }
-        //System.out.println(cartList.size());
+        // System.out.println(cartList.size());
       
         return "cart";
     }
